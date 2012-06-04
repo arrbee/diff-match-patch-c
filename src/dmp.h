@@ -34,12 +34,18 @@
 #include <stdint.h>
 #include <stdio.h>
 
+/**
+ * Public: Each hunk of diff describes one of these operations.
+ */
 typedef enum {
 	DMP_DIFF_DELETE = -1,
 	DMP_DIFF_EQUAL = 0,
 	DMP_DIFF_INSERT = 1
 } dmp_operation_t;
 
+/**
+ * Public: Options structure configures behavior of diff functions.
+ */
 typedef struct {
     /* Number of seconds to map a diff before giving up (0 for infinity). */
     float timeout; /* = 1.0 */
@@ -88,20 +94,74 @@ typedef struct {
 	int trim_common_suffix; /* = 1 */
 } dmp_options;
 
+/**
+ * Public: Main diff object.
+ *
+ * This is an opaque structure.  It is internally a linked list of diff
+ * records, each tracking one of the operations listed above, along with
+ * pointers into the original text data and run lenths for the diff
+ * records.
+ */
 typedef struct dmp_diff dmp_diff;
 
 typedef struct dmp_patch dmp_patch;
 
+/**
+ * Public: Callback function for iterating over a diff.
+ *
+ * When you call `dmp_diff_foreach`, pass a function with this signature
+ * to iterate over the diff records.  If the `op` is a DELETE, the `data`
+ * pointer will be into the `text1` original text.  If the `op` is an
+ * INSERT, the pointer will be into the `text2` new text.  If the `op` is
+ * an EQUAL, we generally attempt to keep the pointer into the `text1`
+ * original text, but that is not guaranteed.
+ *
+ * cb_ref - The reference pointer you passed to the foreach fn.
+ * op - A `dmp_operation_t` value for the chunk of data.
+ * data - Pointer to the diff data as described above.  This data will
+ *        generally not be NUL-terminated, since it is a reference into
+ *        the original data.  You must use the `len` parameter correctly.
+ * len - Bytes of data after the pointer in this chunk.
+ *
+ * Returns 0 to keep iterator or non-zero to stop iteration.  Any value
+ * you return will be passed back from the foreach function.
+ */
 typedef int (*dmp_diff_callback)(
 	void *cb_ref, dmp_operation_t op, const void *data, uint32_t len);
 
 /**
- * Initialize options structure to default values
+ * Public: Initialize options structure to default values.
+ *
+ * This initializes a `dmp_options` structure for passing into the various
+ * functions that take options.  After initialization, you should set the
+ * parameters explicitly that you wish to change.
+ *
+ * opts - Structure to be initialized, generally created on the stack.
+ *
+ * Returns 0 on success, -1 on failure.
  */
 extern int dmp_options_init(dmp_options *opts);
 
 /**
- * Calculate the diff between two texts
+ * Public: Calculate the diff between two texts.
+ *
+ * This will allocate and populate a new `dmp_diff` object with records
+ * describing how to transform `text1` into `text2`.  This returns a diff
+ * with byte-level differences between the two texts.  You can use one of
+ * the diff transformation functions below to modify the diffs to word or
+ * line level diffs, or to align diffs to UTF-8 boundaries or the like.
+ *
+ * diff - Pointer to a `dmp_diff` pointer that will be allocated.  You must
+ *        call `dmp_diff_free()` on this pointer when done.
+ * options - `dmp_options` structure to control diff, or NULL to use defaults.
+ * text1 - The FROM text for the left side of the diff.
+ * len1 - The number of bytes of data in `text1`.
+ * text2 - The TO text for the right side of the diff.
+ * len2 - The number of bytes of data in `text2`.
+ *
+ * Returns 0 if the diff was successfully generated, -1 on failure.  The
+ * only current failure scenario would be a failed allocation.  Otherwise,
+ * some sort of diff should be generated..
  */
 extern int dmp_diff_new(
 	dmp_diff **diff,
@@ -111,6 +171,26 @@ extern int dmp_diff_new(
 	const char *text2,
 	uint32_t    len2);
 
+/**
+ * Public: Generate diff from NUL-terminated strings.
+ *
+ * This is a convenience function when you know that you are diffing
+ * NUL-terminated strings.  It simply calls `strlen()` and passes the
+ * results along to `dmp_diff_new` (plus it deals correctly with NULL
+ * strings, passing them in a zero-length texts).
+ *
+ * diff - Pointer to a `dmp_diff` pointer that will be allocated.  You must
+ *        call `dmp_diff_free()` on this pointer when done.
+ * options - `dmp_options` structure to control diff, or NULL to use defaults.
+ * text1 - The FROM string for the left side of the diff.  Must be a regular
+ *         NUL-terminated C string.
+ * text2 - The TO string for the right side of the diff.  Must be a regular
+ *         NUL-terminated C string.
+ *
+ * Returns 0 if the diff was successfully generated, -1 on failure.  The
+ * only current failure scenario would be a failed allocation.  Otherwise,
+ * some sort of diff should be generated..
+ */
 extern int dmp_diff_from_strs(
 	dmp_diff **diff,
 	const dmp_options *options,
@@ -118,18 +198,41 @@ extern int dmp_diff_from_strs(
 	const char *text2);
 
 /**
- * Free the diff structure
+ * Public: Free the diff structure.
+ *
+ * Call this when you are done with the diff data.
+ *
+ * diff - The `dmp_diff` object to be freed.
  */
 extern void dmp_diff_free(dmp_diff *diff);
 
 /**
- * Iterate over changes in a diff list
+ * Public: Iterate over changes in a diff list.
+ *
+ * Invoke a callback on each hunk of a diff.
+ *
+ * diff - The `dmp_diff` object to iterate over.
+ * cb - The callback function to invoke on each hunk.
+ * cb_ref - A reference pointer that will be passed to callback.
+ *
+ * Returns 0 if iteration completed successfully, or any non-zero value
+ * that was returned by the `cb` callback function to terminate iteration.
  */
 extern int dmp_diff_foreach(
 	const dmp_diff *diff,
 	dmp_diff_callback cb,
 	void *cb_ref);
 
+/**
+ * Public: Count the number of diff hunks.
+ *
+ * This computes the number of hunks in a diff object.  This is the
+ * number of times that your iterator function would be invoked.
+ *
+ * diff - The `dmp_diff` object.
+ *
+ * Returns a count of the number of hunks in the diff.
+ */
 extern uint32_t dmp_diff_hunks(const dmp_diff *diff);
 
 extern void dmp_diff_print_raw(FILE *fp, const dmp_diff *diff);

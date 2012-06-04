@@ -12,12 +12,16 @@ for details.
 
 This code is available at:
 
-  https://github.com/arrbee/google-diff-match-patch-c/
+  https://github.com/arrbee/diff-match-patch-c/
 
 It is Copyright (c) 2012 Russell Belfer <rb@github.com> and licensed
 under the MIT License.  See the included LICENSE file.
 
 == Example Usage
+
+All functions and structures used in this library are prefixed with
+`dmp_`.  To generate a diff, you use a function to create a `dmp_diff`
+object which you can then access and manipulate via other functions.
 
 Here is a silly little example that counts the total length of the
 "equal" runs from the diff.
@@ -52,52 +56,102 @@ This shows the basic pattern of diff API usage:
 
 == Diff API
 
+All public functions in the library that could fail return an `int`
+and will return 0 for success or -1 for failure.  Functions which
+cannot fail will either have a void return or will return a specific
+other data type if they are simple data lookups.
+
+Here are the main functions for generating and accessing diffs:
+
 ```c
-	/* Compute a new diff.
-	 *
-	 * Call this function to calculate a new list of diffs between
-	 * two texts.  The texts are NOT NUL-terminated and must be
-	 * passed in a pointers to data and lengths.  The diff is stored
-	 * as pointers into the original text data, so the texts must
-	 * not be freed until you are through with the diff object.
-	 *
-	 * This will create and pass back a new `dmp_diff` object that
-	 * can be processed by other functions in the library.
-	 *
-	 * Right now you should pass NULL for the `options` parameter
-	 * since it is currently ignored.
-	 */
-	int dmp_diff_new(
-		dmp_diff **diff,
-		const dmp_options *options,
-		const char *text1,
-		uint32_t    len1,
-		const char *text2,
-		uint32_t    len2);
+/**
+ * Public: Calculate the diff between two texts.
+ *
+ * This will allocate and populate a new `dmp_diff` object with records
+ * describing how to transform `text1` into `text2`.  This returns a diff
+ * with byte-level differences between the two texts.  You can use one of
+ * the diff transformation functions below to modify the diffs to word or
+ * line level diffs, or to align diffs to UTF-8 boundaries or the like.
+ *
+ * diff - Pointer to a `dmp_diff` pointer that will be allocated.  You must
+ *        call `dmp_diff_free()` on this pointer when done.
+ * options - `dmp_options` structure to control diff, or NULL to use defaults.
+ * text1 - The FROM text for the left side of the diff.
+ * len1 - The number of bytes of data in `text1`.
+ * text2 - The TO text for the right side of the diff.
+ * len2 - The number of bytes of data in `text2`.
+ *
+ * Returns 0 if the diff was successfully generated, -1 on failure.  The
+ * only current failure scenario would be a failed allocation.  Otherwise,
+ * some sort of diff should be generated..
+ */
+extern int dmp_diff_new(
+	dmp_diff **diff,
+	const dmp_options *options,
+	const char *text1,
+	uint32_t    len1,
+	const char *text2,
+	uint32_t    len2);
 
-	/* Convenience function to diff NUL-terminated strings */
-	int dmp_diff_from_strs(
-		dmp_diff **diff,
-		const dmp_options *options,
-		const char *text1,
-		const char *text2);
+/**
+ * Public: Generate diff from NUL-terminated strings.
+ *
+ * This is a convenience function when you know that you are diffing
+ * NUL-terminated strings.  It simply calls `strlen()` and passes the
+ * results along to `dmp_diff_new` (plus it deals correctly with NULL
+ * strings, passing them in a zero-length texts).
+ *
+ * diff - Pointer to a `dmp_diff` pointer that will be allocated.  You must
+ *        call `dmp_diff_free()` on this pointer when done.
+ * options - `dmp_options` structure to control diff, or NULL to use defaults.
+ * text1 - The FROM string for the left side of the diff.  Must be a regular
+ *         NUL-terminated C string.
+ * text2 - The TO string for the right side of the diff.  Must be a regular
+ *         NUL-terminated C string.
+ *
+ * Returns 0 if the diff was successfully generated, -1 on failure.  The
+ * only current failure scenario would be a failed allocation.  Otherwise,
+ * some sort of diff should be generated..
+ */
+extern int dmp_diff_from_strs(
+	dmp_diff **diff,
+	const dmp_options *options,
+	const char *text1,
+	const char *text2);
 
-	/* Free the memory for a diff */
-	void dmp_diff_free(dmp_diff *diff);
+/**
+ * Public: Free the diff structure.
+ *
+ * Call this when you are done with the diff data.
+ *
+ * diff - The `dmp_diff` object to be freed.
+ */
+extern void dmp_diff_free(dmp_diff *diff);
 
-	/* Get a callback for each span of a diff */
-	int dmp_diff_foreach(
-		const dmp_diff *diff,
-		dmp_diff_callback cb,
-		void *cb_ref);
+/**
+ * Public: Iterate over changes in a diff list.
+ *
+ * Invoke a callback on each hunk of a diff.
+ *
+ * diff - The `dmp_diff` object to iterate over.
+ * cb - The callback function to invoke on each hunk.
+ * cb_ref - A reference pointer that will be passed to callback.
+ *
+ * Returns 0 if iteration completed successfully, or any non-zero value
+ * that was returned by the `cb` callback function to terminate iteration.
+ */
+extern int dmp_diff_foreach(
+	const dmp_diff *diff,
+	dmp_diff_callback cb,
+	void *cb_ref);
 ```
 
 == Status
 
-At this point, the basic diff code works, although I haven't
-implemented all of the optimizations yet.  I haven't written any
-of the diff formatting helpers, nor have I started on the match
-or patch related code yet.
+At this point, the basic diff code works, although I haven't implemented all
+of the optimizations yet.  I haven't written any of the diff formatting
+helpers from the original library yet, nor have I started on the match or
+patch related code yet.
 
 == Copyright and License
 
