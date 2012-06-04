@@ -1,4 +1,5 @@
-= Port of google-diff-match-patch to C
+Port of google-diff-match-patch to C
+====================================
 
 This is a C language port of Neil Fraser's google-diff-match-patch code.
 His original code is available at:
@@ -17,7 +18,8 @@ This code is available at:
 It is Copyright (c) 2012 Russell Belfer <rb@github.com> and licensed
 under the MIT License.  See the included LICENSE file.
 
-== Example Usage
+Example Usage
+-------------
 
 All functions and structures used in this library are prefixed with
 `dmp_`.  To generate a diff, you use a function to create a `dmp_diff`
@@ -54,7 +56,8 @@ This shows the basic pattern of diff API usage:
 2. Process the diff in some way
 3. Free the diff
 
-== Diff API
+Diff API
+--------
 
 All public functions in the library that could fail return an `int`
 and will return 0 for success or -1 for failure.  Functions which
@@ -146,14 +149,16 @@ extern int dmp_diff_foreach(
 	void *cb_ref);
 ```
 
-== Status
+Status
+------
 
 At this point, the basic diff code works, although I haven't implemented all
 of the optimizations yet.  I haven't written any of the diff formatting
 helpers from the original library yet, nor have I started on the match or
 patch related code yet.
 
-== Copyright and License
+Copyright and License
+---------------------
 
 The original Google Diff, Match and Patch Library is licensed under
 the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0).
