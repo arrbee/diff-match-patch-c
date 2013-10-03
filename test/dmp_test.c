@@ -1,13 +1,12 @@
-#include <stdio.h>
-#include <assert.h>
-#include "dmp.h"
-#include "dmp_pool.h"
+/**
+ * dmp_test.c
+ *
+ * Tests for public APIs of libdmp (plus a quick and dirty test driver)
+ */
 
-typedef void (*test_fn)(void);
+#include "dmp_test.h"
 
-#define progress()	fputs(".", stderr)
-
-static void test_util_0(void)
+void test_util_0(void)
 {
 	assert(dmp_common_prefix("aaa", 3, "abc", 3) == 1);
 	assert(dmp_common_prefix("abc", 3, "aaa", 3) == 1);
@@ -31,50 +30,6 @@ static void test_util_0(void)
 	progress();
 }
 
-static void test_ranges_0(void)
-{
-	dmp_pool pool, *p = &pool;
-	dmp_range range, *r = &range;
-	uint32_t used;
-
-	assert(dmp_pool_alloc(p, 4) == 0);
-
-	assert(dmp_range_init(p, r, 0, "", 0, 0) > 0);
-	assert(r->start > 0);
-	assert(r->start == r->end);
-	assert(dmp_range_len(p, r) == 1);
-	assert(dmp_range_insert(p, r, -1, 0, "ab", 0, 2) > 0);
-	assert(r->start != r->end);
-	assert(dmp_range_len(p, r) == 2);
-	assert(dmp_range_insert(p, r, -1, 0, "", 0, 0) > 0);
-	assert(dmp_range_len(p, r) == 3);
-	assert(dmp_range_insert(p, r, -1, 0, "cd", 0, 2) > 0);
-	assert(dmp_range_insert(p, r, -1, 0, "", 0, 0) > 0);
-	assert(dmp_range_insert(p, r, -1, 0, "ef", 0, 2) > 0);
-	assert(dmp_range_insert(p, r, -1, 0, "", 0, 0) > 0);
-	assert(r->start != r->end);
-	assert(dmp_range_len(p, r) == 7);
-	progress();
-
-	used = p->pool_used;
-	dmp_range_normalize(p, r);
-	assert(dmp_range_len(p, r) == 3);
-	assert(strcmp(dmp_node_at(p, r->start)->text, "ab") == 0);
-	assert(strcmp(dmp_node_at(p, r->end)->text, "ef") == 0);
-
-	assert(dmp_range_insert(p, r, -1, 0, "", 0, 0) > 0);
-	assert(p->pool_used == used);
-
-	assert(dmp_range_insert(p, r, -1, 0, "", 0, 0) > 0);
-	assert(dmp_range_insert(p, r, -1, 0, "", 0, 0) > 0);
-	assert(dmp_range_insert(p, r, -1, 0, "", 0, 0) > 0);
-	assert(p->pool_used == used);
-
-	assert(dmp_range_insert(p, r, -1, 0, "", 0, 0) > 0);
-	assert(p->pool_used == used + 1);
-	progress();
-}
-
 struct diff_stat_data {
 	uint32_t deletes;
 	uint32_t delete_bytes;
@@ -89,6 +44,8 @@ static int diff_stats(
 	void *ref, dmp_operation_t op, const void *data, uint32_t len)
 {
 	struct diff_stat_data *d = ref;
+
+	(void)data;
 
 	switch (op) {
 	case DMP_DIFF_DELETE:
@@ -128,7 +85,7 @@ static void expect_diff_stat(
 	progress();
 }
 
-static void test_diff_0(void)
+void test_diff_0(void)
 {
 	dmp_diff *diff;
 
@@ -254,6 +211,7 @@ static void test_diff_0(void)
 	dmp_diff_free(diff);
 }
 
+
 static test_fn g_tests[] = {
 	test_util_0,
 	test_ranges_0,
@@ -264,6 +222,8 @@ static test_fn g_tests[] = {
 int main(int argc, char **argv)
 {
 	test_fn *scan;
+
+	(void)argc; (void)argv;
 
 	for (scan = g_tests; *scan != NULL; ++scan) {
 		(*scan)();

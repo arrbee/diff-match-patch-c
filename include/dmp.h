@@ -6,7 +6,7 @@
  * Original library is Copyright (c) 2006 Google Inc.
  * http://code.google.com/p/google-diff-match-patch/
  *
- * Copyright (c) 2012 Russell Belfer <rb@github.com>
+ * Copyright (c) Russell Belfer <rb@github.com>
  * https://github.com/arrbee/google-diff-match-patch-c/
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,8 @@
  */
 #ifndef INCLUDE_H_dmp
 #define INCLUDE_H_dmp
+
+#define DMP_VERSION "0.1.1"
 
 #include <string.h>
 #include <stdint.h>

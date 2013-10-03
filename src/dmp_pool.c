@@ -3,7 +3,7 @@
  *
  * Utilities for maintaining a Linked list of diff records
  *
- * Copyright (c) 2012 Russell Belfer <rb@github.com>
+ * Copyright (c) Russell Belfer <rb@github.com>
  * https://github.com/arrbee/google-diff-match-patch-c/
  *
  * See included LICENSE file for license details.

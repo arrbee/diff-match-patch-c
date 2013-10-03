@@ -6,7 +6,7 @@
  * Original library is Copyright (c) 2006 Google Inc.
  * http://code.google.com/p/google-diff-match-patch/
  *
- * Copyright (c) 2012 Russell Belfer <rb@github.com>
+ * Copyright (c) Russell Belfer <rb@github.com>
  * https://github.com/arrbee/google-diff-match-patch-c/
  *
  * See included LICENSE file for license details.
@@ -276,7 +276,7 @@ static int diff_bisect(
 	front = (delta % 2 != 0);
 	k1start = k1end = k2start = k2end = 0;
 
-	if (diff->v_alloc < v_length) {
+	if ((int)diff->v_alloc < v_length) {
 		size_t asize = v_length * sizeof(int);
 		diff->v1 = diff->v1 ? realloc(diff->v1, asize) : malloc(asize);
 		diff->v2 = diff->v2 ? realloc(diff->v2, asize) : malloc(asize);
@@ -300,7 +300,8 @@ static int diff_bisect(
 
 		/* advance the front contour */
 		for (k1 = -d + k1start; k1 <= d - k1end; k1 += 2) {
-			int k1off = v_offset + k1, x1, y1;
+			int k1off = v_offset + k1;
+			uint32_t x1, y1;
 
 			if (k1 == -d || (k1 != d && v1[k1off - 1] < v1[k1off + 1]))
 				x1 = v1[k1off + 1];
@@ -320,7 +321,7 @@ static int diff_bisect(
 				int k2off = v_offset + delta - k1;
 				if (k2off >= 0 && k2off < v_length && v2[k2off] != -1) {
 					/* mirror x2 onto top-left coordinate system */
-					int x2 = (int)t1len - v2[k2off];
+					uint32_t x2 = (int)t1len - v2[k2off];
 					if (x1 >= x2)
 						return diff_bisect_split(
 							out, diff, opts, t1, x1, t1len, t2, y1, t2len);
@@ -330,7 +331,8 @@ static int diff_bisect(
 
 		/* advance the reverse contour */
 		for (k2 = -d + k2start; k2 <= d - k2end; k2 += 2) {
-			int k2off = v_offset + k2, x2, y2;
+			int k2off = v_offset + k2;
+			uint32_t x2, y2;
 
 			if (k2 == -d || (k2 != d && v2[k2off - 1] < v2[k2off + 1]))
 				x2 = v2[k2off + 1];
@@ -351,7 +353,7 @@ static int diff_bisect(
 				int k1off = v_offset + delta - k2;
 				if (k1off >= 0 && k1off < v_length && v1[k1off] != -1) {
 					/* mirror x2 onto top-left coordinate system */
-					int x1 = v1[k1off], y1 = v_offset + x1 - k1off;
+					uint32_t x1 = v1[k1off], y1 = v_offset + x1 - k1off;
 					x2 = t1len - x2;
 					if (x1 >= x2)
 						return diff_bisect_split(

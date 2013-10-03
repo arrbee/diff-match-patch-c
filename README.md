@@ -2,56 +2,84 @@ Port of google-diff-match-patch to C
 ====================================
 
 This is a C language port of Neil Fraser's google-diff-match-patch code.
-His original code is available at:
 
-  http://code.google.com/p/google-diff-match-patch/
+Right now, this is focused on the `diff` part of `diff-match-patch`. It
+contains APIs to compare two blocks on text and return a structure
+containing the list of differences (as shared, inserted, and deleted
+sections).
 
-That original code is Copyright (c) 2006 Google Inc. and licensed
-under the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0).
-Please see the APACHE-LICENSE-2.0 file included with this code
-for details.
+Getting Started
+---------------
 
-This code is available at:
+This library is in an early state, so be prepared to have to bend it to
+your will a bit.  Public APIs are declared in `include/dmp.h`.  A basic
+Makefile is included.
 
-  https://github.com/arrbee/diff-match-patch-c/
+```sh
+$ make
+cc -g -Isrc -Iinclude -DSTDC -D_GNU_SOURCE  -Wall -Wextra -Wno-missing-field-initializers -std=c99 -O2  -fPIC   -c -o src/dmp.o src/dmp.c
+cc -g -Isrc -Iinclude -DSTDC -D_GNU_SOURCE  -Wall -Wextra -Wno-missing-field-initializers -std=c99 -O2  -fPIC   -c -o src/dmp_pool.o src/dmp_pool.c
+rm -f libdmp.a
+ar cq libdmp.a src/dmp.o src/dmp_pool.o
+ranlib libdmp.a
 
-It is Copyright (c) 2012 Russell Belfer <rb@github.com> and licensed
-under the MIT License.  See the included LICENSE file.
+$ make test
+cc -o dmp_test -g -Isrc -Iinclude -DSTDC -D_GNU_SOURCE  -Wall -Wextra -Wno-missing-field-initializers -std=c99 -O2  -fPIC test/dmp_test.c test/dmp_test_internals.c -L. -ldmp
 
-Example Usage
--------------
+$ ./dmp_test
+...done
+..done
+...................
+> "ax\x09"
+-"a", +"\xda\x80", ="x", -"\x09", +"\x00"
+< "\xda\x80x\x00"
+.
+> "1ayb2"
+-"1", ="a", -"y", ="b", -"2", +"xab"
+< "abxab"
+.
+> "abcy"
++"xaxcx", ="abc", -"y"
+< "xaxcxabc"
+.done
+```
+
+Example API Usage
+-----------------
 
 All functions and structures used in this library are prefixed with
 `dmp_`.  To generate a diff, you use a function to create a `dmp_diff`
 object which you can then access and manipulate via other functions.
 
-Here is a silly little example that counts the total length of the
-"equal" runs from the diff.
+Here is a silly little example that counts the total length of the "equal"
+runs from the diff.
+
 ```c
-	{
-		dmp_diff *diff;
-		int eq = 0;
+{
+	dmp_diff *diff;
+	int eq = 0;
 
-		if (dmp_diff_from_strs(&diff, NULL, "string 1", "string 2") != 0)
-			handle_error();
+	if (dmp_diff_from_strs(&diff, NULL, "string 1", "string 2") != 0)
+		handle_error();
 
-		dmp_diff_foreach(diff, how_equal, &eq);
-		printf("Strings had %d equal bytes\n", eq);
+	dmp_diff_foreach(diff, how_equal, &eq);
+	printf("Strings had %d equal bytes\n", eq);
 
-		dmp_diff_free(diff);
-	}
+	dmp_diff_free(diff);
+}
 
-	int how_equal(
-		void *ref, dmp_operation_t op, const void *data, uint32_t len)
-	{
-		int *sum = ref;
-		if (op == DMP_DIFF_EQUAL)
-			(*sum) += len;
-		return 0;
-	}
+int how_equal(
+	void *ref, dmp_operation_t op, const void *data, uint32_t len)
+{
+	int *sum = ref;
+	if (op == DMP_DIFF_EQUAL)
+		(*sum) += len;
+	return 0;
+}
 ```
 
 This shows the basic pattern of diff API usage:
+
 1. Generate a diff
 2. Process the diff in some way
 3. Free the diff
@@ -59,10 +87,10 @@ This shows the basic pattern of diff API usage:
 Diff API
 --------
 
-All public functions in the library that could fail return an `int`
-and will return 0 for success or -1 for failure.  Functions which
-cannot fail will either have a void return or will return a specific
-other data type if they are simple data lookups.
+All public functions in the library that could fail return an `int` and
+will return 0 for success or -1 for failure.  Functions which cannot fail
+will either have a void return or will return a specific other data type
+if they are simple data lookups.
 
 Here are the main functions for generating and accessing diffs:
 
@@ -152,15 +180,22 @@ extern int dmp_diff_foreach(
 Status
 ------
 
-At this point, the basic diff code works, although I haven't implemented all
-of the optimizations yet.  I haven't written any of the diff formatting
-helpers from the original library yet, nor have I started on the match or
-patch related code yet.
+The library is currently at version **0.1.1**.  There has only really been
+one iteration on the core functionality and then one minor update to
+reorganize and clean things up a bit.
+
+At this point, the basic Myers diff code works, although I haven't
+implemented all of the optimizations from the upstream library yet.  I
+haven't written any of the diff formatting helpers from the original
+library yet, nor have I started on the match or patch related code yet.
 
 Copyright and License
 ---------------------
 
-The original Google Diff, Match and Patch Library is licensed under
+Copyright
+---------
+
+The original **Google Diff, Match and Patch Library** is licensed under
 the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 The full terms of that license are included here in the
 `APACHE-LICENSE-2.0` file.
@@ -177,7 +212,7 @@ the Expat License) which is included here in the `LICENSE` file.
 
 C version of Diff, Match and Patch Library
 
-  Copyright (c) 2012 Russell Belfer <rb@github.com>
+  Copyright (c) Russell Belfer <rb@github.com>
   <http://github.com/arrbee/google-diff-match-patch-c/>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
