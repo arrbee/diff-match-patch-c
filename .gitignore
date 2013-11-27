@@ -15,7 +15,5 @@ build/
 *.sdf
 *.opensdf
 *.aps
-CMake*
-*.cmake
 .DS_Store
 *~
