@@ -373,7 +373,7 @@ static int diff_bisect(
 static int diff_cleanup_merge(dmp_diff *diff, dmp_range *list)
 {
 	dmp_pool *pool = &diff->pool;
-	int i, before, common, changes;
+	int i, j, before, common, changes;
 	int count_delete, count_insert, len_delete, len_insert;
 	dmp_node *ins = NULL, *del = NULL, *last = NULL, *node, *next;
 
@@ -394,8 +394,9 @@ static int diff_cleanup_merge(dmp_diff *diff, dmp_range *list)
 	 * that can be extracted
 	 */
 
-	for (i = list->start; i != -1; i = node->next) {
+	for (i = list->start; i != -1; i = j) {
 		node = dmp_node_at(pool, i);
+        j = node->next;
 
 		switch (node->op) {
 		case DMP_DIFF_INSERT:
